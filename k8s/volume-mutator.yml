@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: volume-mutator
+  name: volume-mutator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: volume-mutator
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: volume-mutator
+    spec:
+      volumes:
+      - name: webhook-certs
+        emptyDir: {}
+      # initContainers:
+      # - image: helxplatform/volume-mutator:0.0.1
+      #   name: generateTLSCerts
+      #   command: ['./tools/generateTLSCerts']
+      # volumeMounts:
+      #   - mountPath: /helx/webhook/certs
+      #     name: webhook-certs
+      # env:
+      # - name: MUTATE_CONFIG
+      #   value: mutating-webhook-configuration
+      # - name: WEBHOOK_SERVICE
+      #   value: volume-mutator-svc
+      # - name: WEBHOOK_NAMESPACE
+      #   value:  default
+      containers:
+      - image: helxplatform/volume-mutator:0.0.1
+        name: volume-mutator
+        volumeMounts:
+        - mountPath: /helx/webhook/certs 
+          name: webhook-certs 
+          readOnly: true
+        resources: {}
+status: {}
