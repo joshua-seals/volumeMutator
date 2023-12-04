@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/helxplatform/volumeMutator/tools/commands"
@@ -16,8 +17,8 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	// ctx := context.Background()
-	// commands.CreateMutationConfig(ctx, certPath)
+	ctx := context.Background()
+	commands.CreateMutationConfig(ctx, certPath)
 }
 
 // Reference https://www.velotio.com/engineering-blog/managing-tls-certificate-for-kubernetes-admission-webhook
