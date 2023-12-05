@@ -5,6 +5,7 @@ import (
 	"os"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	v1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -13,10 +14,9 @@ import (
 func CreateMutationConfig(ctx context.Context, caCertPath string) {
 
 	var (
-		webhookNamespace, _ = os.LookupEnv("WEBHOOK_NAMESPACE")
-		mutationCfgName, _  = os.LookupEnv("MUTATE_CONFIG")
-		// validationCfgName, _ = os.LookupEnv("VALIDATE_CONFIG") Not used here in below code
-		webhookService, _ = os.LookupEnv("WEBHOOK_SERVICE")
+		webhookNamespace = os.Getenv("WEBHOOK_NAMESPACE")
+		mutationCfgName  = os.Getenv("MUTATE_CONFIG")
+		webhookService   = os.Getenv("WEBHOOK_SERVICE")
 	)
 	config := ctrl.GetConfigOrDie()
 	kubeClient, err := kubernetes.NewForConfig(config)
@@ -43,15 +43,23 @@ func CreateMutationConfig(ctx context.Context, caCertPath string) {
 					Path:      &path,
 				},
 			},
-			Rules: []admissionregistrationv1.RuleWithOperations{{Operations: []admissionregistrationv1.OperationType{
-				admissionregistrationv1.Create},
-				Rule: admissionregistrationv1.Rule{
-					APIGroups:   []string{"apps"},
-					APIVersions: []string{"v1"},
-					Resources:   []string{"deployments"},
-				},
-			}},
-			FailurePolicy: &fail,
+			Rules: []admissionregistrationv1.RuleWithOperations{
+				{
+					Operations: []admissionregistrationv1.OperationType{
+						admissionregistrationv1.Create, admissionregistrationv1.Update,
+					},
+					Rule: admissionregistrationv1.Rule{
+						APIGroups:   []string{"apps"},
+						APIVersions: []string{"v1"},
+						Resources:   []string{"deployments"},
+					},
+				}},
+			AdmissionReviewVersions: []string{"v1"},
+			FailurePolicy:           &fail,
+			SideEffects: func() *v1.SideEffectClass {
+				sideEffect := v1.SideEffectClassNone
+				return &sideEffect
+			}(),
 		}},
 	}
 

@@ -8,8 +8,8 @@ COPY . /helx
 WORKDIR /helx/tools 
 RUN go build -ldflags "-X main.certPath=${CERT_PATH}" -o generateTLSCerts
 
-WORKDIR /helx
-RUN go build -o volumeMutator
+# WORKDIR /helx
+# RUN go build -o volumeMutator
 
 
 FROM alpine:3.18
@@ -22,15 +22,15 @@ RUN addgroup -g 1000 -S helx && \
     adduser -u 1000 -h /helx -G helx -S helx
 
 # Copy tooling for our initContainer
-COPY --from=builder --chown=helx:helx /helx/tools/generateTLSCerts /helx/tools
+COPY --from=builder --chown=helx:helx /helx/tools/generateTLSCerts /helx
 # Copy main application
-COPY --from=builder --chown=helx:helx /helx/volumeMutator /helx
+# COPY --from=builder --chown=helx:helx /helx/volumeMutator /helx
 
 USER helx
 
 WORKDIR /helx
 EXPOSE 8443
-CMD ["./volumeMutator"]
+CMD ["./generateTLSCerts"]
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.title="volumeMutator" \

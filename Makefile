@@ -2,7 +2,7 @@
 # openssl req -x509 -nodes -newkey rsa:2048 -keyout server.rsa.key -out server.rsa.crt -days 3650
 
 ## Environment 
-CERT_PATH := ./etc/webhook/certs/
+CERT_PATH := ./webhook/certs/
 ENVIRONMENT := develop
 BASE_IMAGE := helxplatform/volume-mutator
 IMAGE_TAG := containers.renci.org/$(BASE_IMAGE)
@@ -38,6 +38,9 @@ kind-up:
 
 kind-load:
 	kind load docker-image $(BASE_IMAGE):$(VERSION) --name $(KIND_CLUSTER)
+
+kind-apply:
+	kubectl apply -f k8s/volume-mutator.yml
 
 kind-down:
 	kind delete cluster --name $(KIND_CLUSTER)
