@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func GenerateTLSCerts(certPath string) error {
+func GenerateTLSCerts(certPath string) (*bytes.Buffer, error) {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(2020),
 		Subject: pkix.Name{
@@ -31,14 +31,14 @@ func GenerateTLSCerts(certPath string) error {
 	caPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		log.Println("Error: generating private key ", err)
-		return err
+		return nil, err
 	}
 
 	// Self signed CA certificate based on template above
 	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
 	if err != nil {
 		log.Println("Error: generating self signed certificate ", err)
-		return err
+		return nil, err
 	}
 
 	// PEM encode CA certificate
@@ -73,13 +73,13 @@ func GenerateTLSCerts(certPath string) error {
 	serverPrivKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		log.Println("Error: generating server priv key ", err)
-		return err
+		return nil, err
 	}
 	// sign the server certificate, note parent is ca created at the beginning
 	serverCertBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &serverPrivKey.PublicKey, serverPrivKey)
 	if err != nil {
 		log.Println("Error: creating server cert ", err)
-		return err
+		return nil, err
 	}
 	// PEM encode the server cert and key
 	serverCertPEM := new(bytes.Buffer)
@@ -97,22 +97,22 @@ func GenerateTLSCerts(certPath string) error {
 	err = os.MkdirAll(certPath, 0755)
 	if err != nil {
 		log.Println("Error: Creating Directory ", err)
-		return err
+		return nil, err
 	}
 
 	err = WriteFile(certPath+"tls.crt", serverCertPEM)
 	if err != nil {
 		log.Println("Error: Writing tls.crt ", err)
-		return err
+		return nil, err
 	}
 	err = WriteFile(certPath+"tls.key", serverPrivKeyPEM)
 	if err != nil {
 		log.Println("Error: Writing tls.key ", err)
-		return err
+		return nil, err
 
 	}
 
-	return nil
+	return caPEM, nil
 }
 
 // WriteFile writes data in the file at the given path

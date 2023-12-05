@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"context"
 	"os"
 
@@ -10,7 +11,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func CreateMutationConfig(ctx context.Context, caCertPath string) {
+func CreateMutationConfig(ctx context.Context, caPEM *bytes.Buffer) {
 
 	var (
 		webhookNamespace = os.Getenv("WEBHOOK_NAMESPACE")
@@ -23,10 +24,10 @@ func CreateMutationConfig(ctx context.Context, caCertPath string) {
 		panic("failed to set go -client")
 	}
 
-	path := "/mutate"
+	path := "/volume-mutator"
 	fail := v1.Fail
-	// Read in caCert created in GenerateTLSCerts
-	caCert, err := os.ReadFile(caCertPath)
+	port := int32(8443)
+
 	if err != nil {
 		panic("failed to read certPath")
 	}
@@ -38,11 +39,12 @@ func CreateMutationConfig(ctx context.Context, caCertPath string) {
 		Webhooks: []v1.MutatingWebhook{{
 			Name: "volume-mutator.renci.org",
 			ClientConfig: v1.WebhookClientConfig{
-				CABundle: caCert, // CA bundle created in generateTLSCerts command
+				CABundle: caPEM.Bytes(), // CA bundle created in generateTLSCerts command
 				Service: &v1.ServiceReference{
 					Name:      webhookService,
 					Namespace: webhookNamespace,
 					Path:      &path,
+					Port:      &port,
 				},
 			},
 			Rules: []v1.RuleWithOperations{
@@ -65,7 +67,9 @@ func CreateMutationConfig(ctx context.Context, caCertPath string) {
 		}},
 	}
 
-	if _, err := kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(ctx, mutateconfig, metav1.CreateOptions{}); err != nil {
+	if _, err := kubeClient.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(
+		ctx, mutateconfig, metav1.CreateOptions{},
+	); err != nil {
 		panic(err)
 	}
 }

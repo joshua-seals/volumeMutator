@@ -1,97 +1,3 @@
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   creationTimestamp: null
-#   labels:
-#     app: volume-mutator
-#   name: volume-mutator
-# spec:
-#   replicas: 1
-#   selector:
-#     matchLabels:
-#       app: volume-mutator
-#   strategy: {}
-#   template:
-#     metadata:
-#       creationTimestamp: null
-#       labels:
-#         app: volume-mutator
-#     spec:
-#       volumes:
-#       - name: webhook-certs
-#         emptyDir: {}
-#       initContainers:
-#       - image: helxplatform/volume-mutator:0.0.1
-#         name: generateTLSCerts
-#         command: ['./tools/generateTLSCerts']
-#       volumeMounts:
-#         - mountPath: /helx/webhook/certs
-#           name: webhook-certs
-#       # env:
-#       # - name: MUTATE_CONFIG
-#       #   value: mutating-webhook-configuration
-#       # - name: WEBHOOK_SERVICE
-#       #   value: volume-mutator-svc
-#       # - name: WEBHOOK_NAMESPACE
-#       #   value:  default
-#       containers:
-#       - image: nginx:latest
-#       # - image: helxplatform/volume-mutator:0.0.1
-#         name: volume-mutator
-#         volumeMounts:
-#         - mountPath: /helx/webhook/certs 
-#           name: webhook-certs 
-#           readOnly: true
-#         resources: {}
-# status: {}
-
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: Role
-# metadata:
-#   name: default-role
-# rules:
-# - apiGroups: ["admissionregistration.k8s.io"]
-#   resources: ["pods"]
-#   verbs: ["get", "list", "watch", "update"] # Adjust these permissions based on your requirements
-
-# ---
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: RoleBinding
-# metadata:
-#   name: default-role-binding
-# subjects:
-# - kind: ServiceAccount
-#   name: default
-#   namespace: default
-# roleRef:
-#   kind: Role
-#   name: default-role
-#   apiGroup: rbac.authorization.k8s.io
-
-# ---
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: Role
-# metadata:
-#   name: volume-mutator
-# rules:
-# - apiGroups: ["admissionregistration.k8s.io"]
-#   resources: ["pods","deployments"]
-#   verbs: ["get", "list", "watch","update"] # Adjust these permissions based on your requirements
-
-# ---
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: RoleBinding
-# metadata:
-#   name: volume-mutator
-# subjects:
-# - kind: ServiceAccount
-#   name: default
-#   namespace: default
-# roleRef:
-#   kind: Role
-#   name: cluster-role
-#   apiGroup: rbac.authorization.k8s.io
-
 --- 
 apiVersion: apps/v1
 kind: Deployment
@@ -116,7 +22,8 @@ spec:
       initContainers:
       - image: helxplatform/volume-mutator:0.0.1
         name: tooling
-        # command: ['./generateTLSCerts']
+        command: ['./generateTLSCerts','-M']
+        ## Ensure these are controlled by makefile
         env:
         - name: MUTATE_CONFIG
           value: volume-mutator
@@ -128,10 +35,28 @@ spec:
         - mountPath: /helx/webhook/certs
           name: webhook-certs
       containers:
-      - image: nginx:latest
-        name: nginx
+      - image: helxplatform/volume-mutator:0.0.1
+        name: volume-mutator
         volumeMounts:
         - mountPath: /helx/webhook/certs 
           name: webhook-certs 
           readOnly: true
         resources: {}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: volume-mutator
+  name: volume-mutator-svc
+spec:
+  ports:
+  - port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    app: volume-mutator
+status:
+  loadBalancer: {}

@@ -2,7 +2,7 @@
 # openssl req -x509 -nodes -newkey rsa:2048 -keyout server.rsa.key -out server.rsa.crt -days 3650
 
 ## Environment 
-CERT_PATH := ./webhook/certs/
+CERT_PATH := /helx/webhook/certs/
 ENVIRONMENT := develop
 BASE_IMAGE := helxplatform/volume-mutator
 IMAGE_TAG := containers.renci.org/$(BASE_IMAGE)
