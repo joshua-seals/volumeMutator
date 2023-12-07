@@ -25,6 +25,5 @@ func main() {
 		w.Write(js)
 	})
 	log.Print("Listening on port 8443...")
-	http.ListenAndServe(":8443", nil)
 	log.Fatal(http.ListenAndServeTLS(":8443", cert, key, nil))
 }

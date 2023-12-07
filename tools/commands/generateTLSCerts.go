@@ -9,18 +9,24 @@ import (
 	"encoding/pem"
 	"log"
 	"math/big"
+	"net"
 	"os"
 	"time"
 )
 
 func GenerateTLSCerts(certPath string) (*bytes.Buffer, error) {
 	ca := &x509.Certificate{
-		SerialNumber: big.NewInt(2020),
+		SerialNumber: big.NewInt(2023),
 		Subject: pkix.Name{
-			Organization: []string{"renci.org"},
+			Organization:  []string{"renci.org"},
+			Country:       []string{"US"},
+			Province:      []string{"North Carolina"},
+			Locality:      []string{"Chapel Hill"},
+			StreetAddress: []string{"Europa Center 100 Europa Drive, Suite 540"},
+			PostalCode:    []string{"27517"},
 		},
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(1, 0, 0),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
 		IsCA:                  true,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
@@ -48,6 +54,12 @@ func GenerateTLSCerts(certPath string) (*bytes.Buffer, error) {
 		Bytes: caBytes,
 	})
 
+	// caPrivKeyPEM := new(bytes.Buffer)
+	// pem.Encode(caPrivKeyPEM, &pem.Block{
+	// 	Type:  "RSA PRIVATE KEY",
+	// 	Bytes: x509.MarshalPKCS1PrivateKey(caPrivKey),
+	// })
+
 	// Very important to mirror the name of the service
 	// [name of service].[namespace].svc for dns
 	// **** MAKE DYNAMIC
@@ -59,11 +71,18 @@ func GenerateTLSCerts(certPath string) (*bytes.Buffer, error) {
 		DNSNames:     dnsNames,
 		SerialNumber: big.NewInt(1658),
 		Subject: pkix.Name{
-			CommonName:   "webhookCert",
-			Organization: []string{"renci.com"},
+			CommonName:    "webhookCert",
+			Organization:  []string{"renci.org"},
+			Country:       []string{"US"},
+			Province:      []string{"North Carolina"},
+			Locality:      []string{"Chapel Hill"},
+			StreetAddress: []string{"Europa Center 100 Europa Drive, Suite 540"},
+			PostalCode:    []string{"27517"},
 		},
+		// Ensure valid at localhost too
+		IPAddresses:  []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback},
 		NotBefore:    time.Now(),
-		NotAfter:     time.Now().AddDate(1, 0, 0),
+		NotAfter:     time.Now().AddDate(10, 0, 0),
 		SubjectKeyId: []byte{1, 2, 3, 4, 6},
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:     x509.KeyUsageDigitalSignature,
@@ -77,6 +96,7 @@ func GenerateTLSCerts(certPath string) (*bytes.Buffer, error) {
 	}
 	// sign the server certificate, note parent is ca created at the beginning
 	serverCertBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &serverPrivKey.PublicKey, serverPrivKey)
+	//serverCertBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &serverPrivKey.PublicKey, caPrivKey)
 	if err != nil {
 		log.Println("Error: creating server cert ", err)
 		return nil, err
@@ -111,7 +131,6 @@ func GenerateTLSCerts(certPath string) (*bytes.Buffer, error) {
 		return nil, err
 
 	}
-
 	return caPEM, nil
 }
 
@@ -129,3 +148,5 @@ func WriteFile(filepath string, sCert *bytes.Buffer) error {
 	}
 	return nil
 }
+
+// Ref: https://shaneutt.com/blog/golang-ca-and-signed-cert-go/
