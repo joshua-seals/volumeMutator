@@ -95,8 +95,7 @@ func GenerateTLSCerts(certPath string) (*bytes.Buffer, error) {
 		return nil, err
 	}
 	// sign the server certificate, note parent is ca created at the beginning
-	serverCertBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &serverPrivKey.PublicKey, serverPrivKey)
-	//serverCertBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &serverPrivKey.PublicKey, caPrivKey)
+	serverCertBytes, err := x509.CreateCertificate(rand.Reader, cert, ca, &serverPrivKey.PublicKey, caPrivKey)
 	if err != nil {
 		log.Println("Error: creating server cert ", err)
 		return nil, err
